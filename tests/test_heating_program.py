@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+import json
 
 from heating_program import HeatingProgram, MAX_TEMPERATURE, MIN_TEMPERATURE
 
@@ -121,8 +122,32 @@ class HeatingProgramTest(unittest.TestCase):
         )
 
         program = HeatingProgram(self.storage_path)
+        program.save()
 
         self.assertEqual(["Salon"], [device.name for device in program.list_devices()])
+        saved_data = json.loads(self.storage_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            [{"name": "Salon", "kind": "grzejnik", "is_on": False, "current_temperature": None, "target_temperature": None}],
+            saved_data["devices"],
+        )
+
+    def test_storage_rejects_out_of_range_temperatures(self) -> None:
+        self.storage_path.write_text(
+            """
+            {
+              "devices": [
+                {"name": "Salon", "kind": "grzejnik", "target_temperature": 40}
+              ]
+            }
+            """.strip(),
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Nie można odczytać pliku z urządzeniami grzewczymi",
+        ):
+            HeatingProgram(self.storage_path)
 
 
 if __name__ == "__main__":

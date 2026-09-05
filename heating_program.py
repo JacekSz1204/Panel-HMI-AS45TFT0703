@@ -56,6 +56,10 @@ class HeatingProgram:
                     if key in DEVICE_FIELDS
                 }
                 device = HeatingDevice(**filtered_item)
+                if device.current_temperature is not None:
+                    self._validate_temperature(device.current_temperature)
+                if device.target_temperature is not None:
+                    self._validate_temperature(device.target_temperature)
                 if device.name in loaded_devices:
                     raise ValueError(
                         f"Zduplikowana nazwa urządzenia '{device.name}' w pliku."
