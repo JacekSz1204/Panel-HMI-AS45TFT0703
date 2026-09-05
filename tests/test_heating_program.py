@@ -80,6 +80,34 @@ class HeatingProgramTest(unittest.TestCase):
         ):
             HeatingProgram(self.storage_path)
 
+    def test_non_object_storage_root_raises_readable_error(self) -> None:
+        self.storage_path.write_text("[]", encoding="utf-8")
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Nie można odczytać pliku z urządzeniami grzewczymi",
+        ):
+            HeatingProgram(self.storage_path)
+
+    def test_duplicate_device_names_in_storage_raise_error(self) -> None:
+        self.storage_path.write_text(
+            """
+            {
+              "devices": [
+                {"name": "Salon", "kind": "grzejnik"},
+                {"name": "Salon", "kind": "piec"}
+              ]
+            }
+            """.strip(),
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Zduplikowana nazwa urządzenia 'Salon' w pliku",
+        ):
+            HeatingProgram(self.storage_path)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -32,13 +32,20 @@ class HeatingProgram:
 
         try:
             data = json.loads(self.storage_path.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                raise TypeError("Główny obiekt JSON musi być słownikiem.")
             devices = data.get("devices", [])
             if not isinstance(devices, list):
                 raise TypeError("Pole 'devices' musi być listą.")
-            self.devices = {
-                item["name"]: HeatingDevice(**item)
-                for item in devices
-            }
+            loaded_devices: dict[str, HeatingDevice] = {}
+            for item in devices:
+                device = HeatingDevice(**item)
+                if device.name in loaded_devices:
+                    raise ValueError(
+                        f"Zduplikowana nazwa urządzenia '{device.name}' w pliku."
+                    )
+                loaded_devices[device.name] = device
+            self.devices = loaded_devices
         except (json.JSONDecodeError, KeyError, TypeError) as exc:
             raise ValueError(
                 "Nie można odczytać pliku z urządzeniami grzewczymi."
