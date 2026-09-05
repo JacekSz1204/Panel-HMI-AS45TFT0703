@@ -54,6 +54,8 @@ class HeatingProgram:
     ) -> HeatingDevice:
         if name in self.devices:
             raise ValueError(f"Urządzenie '{name}' już istnieje.")
+        if current_temperature is not None:
+            self._validate_temperature(current_temperature)
         if target_temperature is not None:
             self._validate_temperature(target_temperature)
 

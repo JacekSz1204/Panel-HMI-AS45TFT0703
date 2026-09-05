@@ -34,6 +34,14 @@ class HeatingProgramTest(unittest.TestCase):
 
         self.assertTrue(device.is_on)
 
+    def test_add_device_validates_current_temperature_range(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Temperatura musi być w zakresie"):
+            self.program.add_device(
+                "Garaż",
+                "nagrzewnica",
+                current_temperature=MAX_TEMPERATURE + 1,
+            )
+
     def test_set_target_temperature_validates_allowed_range(self) -> None:
         self.program.add_device("Łazienka", "podłogówka")
 
