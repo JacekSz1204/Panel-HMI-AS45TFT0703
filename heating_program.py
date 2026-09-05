@@ -30,16 +30,25 @@ class HeatingProgram:
         if not self.storage_path.exists():
             return
 
-        data = json.loads(self.storage_path.read_text(encoding="utf-8"))
-        self.devices = {
-            item["name"]: HeatingDevice(**item)
-            for item in data.get("devices", [])
-        }
+        try:
+            data = json.loads(self.storage_path.read_text(encoding="utf-8"))
+            devices = data.get("devices", [])
+            if not isinstance(devices, list):
+                raise TypeError("Pole 'devices' musi być listą.")
+            self.devices = {
+                item["name"]: HeatingDevice(**item)
+                for item in devices
+            }
+        except (json.JSONDecodeError, KeyError, TypeError) as exc:
+            raise ValueError(
+                "Nie można odczytać pliku z urządzeniami grzewczymi."
+            ) from exc
 
     def save(self) -> None:
         payload = {
             "devices": [asdict(device) for device in self.devices.values()],
         }
+        self.storage_path.parent.mkdir(parents=True, exist_ok=True)
         self.storage_path.write_text(
             json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
@@ -170,9 +179,9 @@ def format_device(device: HeatingDevice) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    program = HeatingProgram(Path(args.storage))
 
     try:
+        program = HeatingProgram(Path(args.storage))
         if args.command == "add":
             device = program.add_device(
                 args.name,

@@ -27,6 +27,14 @@ class HeatingProgramTest(unittest.TestCase):
         reloaded = HeatingProgram(self.storage_path)
         self.assertEqual(["Kocioł"], [item.name for item in reloaded.list_devices()])
 
+    def test_add_device_creates_missing_parent_directories(self) -> None:
+        nested_storage_path = Path(self.temp_dir.name) / "nested" / "devices.json"
+        nested_program = HeatingProgram(nested_storage_path)
+
+        nested_program.add_device("Kotłownia", "piec")
+
+        self.assertTrue(nested_storage_path.exists())
+
     def test_set_power_changes_device_state(self) -> None:
         self.program.add_device("Salon", "grzejnik")
 
@@ -51,9 +59,26 @@ class HeatingProgramTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Temperatura musi być w zakresie"):
             self.program.set_target_temperature("Łazienka", MAX_TEMPERATURE + 0.5)
 
+    def test_add_device_validates_target_temperature_range(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Temperatura musi być w zakresie"):
+            self.program.add_device(
+                "Sypialnia",
+                "grzejnik",
+                target_temperature=MAX_TEMPERATURE + 1,
+            )
+
     def test_unknown_device_raises_error(self) -> None:
         with self.assertRaisesRegex(ValueError, "Nie znaleziono urządzenia"):
             self.program.set_power("Nieznane", True)
+
+    def test_invalid_storage_file_raises_readable_error(self) -> None:
+        self.storage_path.write_text("{broken json", encoding="utf-8")
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Nie można odczytać pliku z urządzeniami grzewczymi",
+        ):
+            HeatingProgram(self.storage_path)
 
 
 if __name__ == "__main__":
