@@ -60,6 +60,12 @@ class HeatingProgramTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Temperatura musi być w zakresie"):
             self.program.set_target_temperature("Łazienka", MAX_TEMPERATURE + 0.5)
 
+    def test_set_target_temperature_rejects_boolean_value(self) -> None:
+        self.program.add_device("Łazienka", "podłogówka")
+
+        with self.assertRaisesRegex(ValueError, "Temperatura musi być liczbą"):
+            self.program.set_target_temperature("Łazienka", True)
+
     def test_add_device_validates_target_temperature_range(self) -> None:
         with self.assertRaisesRegex(ValueError, "Temperatura musi być w zakresie"):
             self.program.add_device(
@@ -137,6 +143,24 @@ class HeatingProgramTest(unittest.TestCase):
             {
               "devices": [
                 {"name": "Salon", "kind": "grzejnik", "target_temperature": 40}
+              ]
+            }
+            """.strip(),
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Nie można odczytać pliku z urządzeniami grzewczymi",
+        ):
+            HeatingProgram(self.storage_path)
+
+    def test_storage_rejects_invalid_field_types(self) -> None:
+        self.storage_path.write_text(
+            """
+            {
+              "devices": [
+                {"name": 123, "kind": [], "is_on": "yes"}
               ]
             }
             """.strip(),

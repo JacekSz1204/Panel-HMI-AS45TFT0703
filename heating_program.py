@@ -50,6 +50,7 @@ class HeatingProgram:
                     raise TypeError("Każde urządzenie musi być obiektem JSON.")
                 if "name" not in item or "kind" not in item:
                     raise TypeError("Urządzenie musi zawierać pola 'name' i 'kind'.")
+                self._validate_device_payload(item)
                 filtered_item = {
                     key: value
                     for key, value in item.items()
@@ -133,11 +134,28 @@ class HeatingProgram:
 
     @staticmethod
     def _validate_temperature(temperature: float) -> None:
+        if isinstance(temperature, bool) or not isinstance(temperature, (int, float)):
+            raise ValueError("Temperatura musi być liczbą.")
         if not MIN_TEMPERATURE <= temperature <= MAX_TEMPERATURE:
             raise ValueError(
                 f"Temperatura musi być w zakresie "
                 f"{MIN_TEMPERATURE}-{MAX_TEMPERATURE}°C."
             )
+
+    @staticmethod
+    def _validate_device_payload(item: dict[str, object]) -> None:
+        if not isinstance(item["name"], str) or not item["name"]:
+            raise TypeError("Pole 'name' musi być niepustym napisem.")
+        if not isinstance(item["kind"], str) or not item["kind"]:
+            raise TypeError("Pole 'kind' musi być niepustym napisem.")
+        if "is_on" in item and not isinstance(item["is_on"], bool):
+            raise TypeError("Pole 'is_on' musi być wartością logiczną.")
+        for field_name in ("current_temperature", "target_temperature"):
+            value = item.get(field_name)
+            if value is not None and (
+                isinstance(value, bool) or not isinstance(value, (int, float))
+            ):
+                raise TypeError(f"Pole '{field_name}' musi być liczbą lub null.")
 
 
 def build_parser() -> argparse.ArgumentParser:
