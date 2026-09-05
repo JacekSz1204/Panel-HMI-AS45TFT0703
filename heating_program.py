@@ -9,6 +9,13 @@ from pathlib import Path
 MIN_TEMPERATURE = 5.0
 MAX_TEMPERATURE = 35.0
 DEFAULT_STORAGE_PATH = Path(__file__).with_name("heating_devices.json")
+DEVICE_FIELDS = {
+    "name",
+    "kind",
+    "is_on",
+    "current_temperature",
+    "target_temperature",
+}
 
 
 @dataclass
@@ -43,9 +50,12 @@ class HeatingProgram:
                     raise TypeError("Każde urządzenie musi być obiektem JSON.")
                 if "name" not in item or "kind" not in item:
                     raise TypeError("Urządzenie musi zawierać pola 'name' i 'kind'.")
-                if set(item) - {"name", "kind", "is_on", "current_temperature", "target_temperature"}:
-                    raise TypeError("Urządzenie zawiera nieobsługiwane pola.")
-                device = HeatingDevice(**item)
+                filtered_item = {
+                    key: value
+                    for key, value in item.items()
+                    if key in DEVICE_FIELDS
+                }
+                device = HeatingDevice(**filtered_item)
                 if device.name in loaded_devices:
                     raise ValueError(
                         f"Zduplikowana nazwa urządzenia '{device.name}' w pliku."

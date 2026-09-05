@@ -108,7 +108,7 @@ class HeatingProgramTest(unittest.TestCase):
         ):
             HeatingProgram(self.storage_path)
 
-    def test_invalid_device_entry_in_storage_raises_readable_error(self) -> None:
+    def test_storage_ignores_unsupported_device_fields(self) -> None:
         self.storage_path.write_text(
             """
             {
@@ -120,11 +120,9 @@ class HeatingProgramTest(unittest.TestCase):
             encoding="utf-8",
         )
 
-        with self.assertRaisesRegex(
-            ValueError,
-            "Nie można odczytać pliku z urządzeniami grzewczymi",
-        ):
-            HeatingProgram(self.storage_path)
+        program = HeatingProgram(self.storage_path)
+
+        self.assertEqual(["Salon"], [device.name for device in program.list_devices()])
 
 
 if __name__ == "__main__":
