@@ -104,7 +104,25 @@ class HeatingProgramTest(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            "Zduplikowana nazwa urządzenia 'Salon' w pliku",
+            "Nie można odczytać pliku z urządzeniami grzewczymi",
+        ):
+            HeatingProgram(self.storage_path)
+
+    def test_invalid_device_entry_in_storage_raises_readable_error(self) -> None:
+        self.storage_path.write_text(
+            """
+            {
+              "devices": [
+                {"name": "Salon", "kind": "grzejnik", "unsupported": true}
+              ]
+            }
+            """.strip(),
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "Nie można odczytać pliku z urządzeniami grzewczymi",
         ):
             HeatingProgram(self.storage_path)
 

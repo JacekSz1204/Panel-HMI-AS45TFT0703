@@ -21,7 +21,7 @@ class HeatingDevice:
 
 
 class HeatingProgram:
-    def __init__(self, storage_path: Path = DEFAULT_STORAGE_PATH) -> None:
+    def __init__(self, storage_path: str | Path = DEFAULT_STORAGE_PATH) -> None:
         self.storage_path = Path(storage_path)
         self.devices: dict[str, HeatingDevice] = {}
         self.load()
@@ -39,6 +39,12 @@ class HeatingProgram:
                 raise TypeError("Pole 'devices' musi być listą.")
             loaded_devices: dict[str, HeatingDevice] = {}
             for item in devices:
+                if not isinstance(item, dict):
+                    raise TypeError("Każde urządzenie musi być obiektem JSON.")
+                if "name" not in item or "kind" not in item:
+                    raise TypeError("Urządzenie musi zawierać pola 'name' i 'kind'.")
+                if set(item) - {"name", "kind", "is_on", "current_temperature", "target_temperature"}:
+                    raise TypeError("Urządzenie zawiera nieobsługiwane pola.")
                 device = HeatingDevice(**item)
                 if device.name in loaded_devices:
                     raise ValueError(
@@ -46,7 +52,7 @@ class HeatingProgram:
                     )
                 loaded_devices[device.name] = device
             self.devices = loaded_devices
-        except (json.JSONDecodeError, KeyError, TypeError) as exc:
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
             raise ValueError(
                 "Nie można odczytać pliku z urządzeniami grzewczymi."
             ) from exc
