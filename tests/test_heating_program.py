@@ -1,9 +1,11 @@
+import contextlib
+import io
 import tempfile
 import unittest
 from pathlib import Path
 import json
 
-from heating_program import HeatingProgram, MAX_TEMPERATURE, MIN_TEMPERATURE
+from heating_program import HeatingProgram, MAX_TEMPERATURE, MIN_TEMPERATURE, main
 
 
 class HeatingProgramTest(unittest.TestCase):
@@ -172,6 +174,42 @@ class HeatingProgramTest(unittest.TestCase):
             "Nie można odczytać pliku z urządzeniami grzewczymi",
         ):
             HeatingProgram(self.storage_path)
+
+    def test_main_lists_empty_storage(self) -> None:
+        stdout = io.StringIO()
+
+        with contextlib.redirect_stdout(stdout):
+            exit_code = main(["--storage", str(self.storage_path), "list"])
+
+        self.assertEqual(0, exit_code)
+        self.assertEqual(
+            "Brak skonfigurowanych urządzeń grzewczych.",
+            stdout.getvalue().strip(),
+        )
+
+    def test_main_adds_and_lists_device(self) -> None:
+        add_stdout = io.StringIO()
+        list_stdout = io.StringIO()
+
+        with contextlib.redirect_stdout(add_stdout):
+            add_exit_code = main(
+                [
+                    "--storage",
+                    str(self.storage_path),
+                    "add",
+                    "Kocioł",
+                    "piec",
+                    "--target-temperature",
+                    "21",
+                ]
+            )
+        with contextlib.redirect_stdout(list_stdout):
+            list_exit_code = main(["--storage", str(self.storage_path), "list"])
+
+        self.assertEqual(0, add_exit_code)
+        self.assertEqual(0, list_exit_code)
+        self.assertIn("Dodano urządzenie:", add_stdout.getvalue())
+        self.assertIn("Kocioł (piec)", list_stdout.getvalue())
 
 
 if __name__ == "__main__":

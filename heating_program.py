@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -76,11 +78,19 @@ class HeatingProgram:
         payload = {
             "devices": [asdict(device) for device in self.devices.values()],
         }
-        self.storage_path.parent.mkdir(parents=True, exist_ok=True)
-        self.storage_path.write_text(
-            json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        parent_directory = self.storage_path.parent
+        parent_directory.mkdir(parents=True, exist_ok=True)
+
+        with tempfile.NamedTemporaryFile(
+            "w",
             encoding="utf-8",
-        )
+            dir=parent_directory,
+            delete=False,
+        ) as temp_file:
+            temp_file.write(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+            temp_path = Path(temp_file.name)
+
+        os.replace(temp_path, self.storage_path)
 
     def add_device(
         self,
@@ -130,7 +140,7 @@ class HeatingProgram:
             raise ValueError(f"Nie znaleziono urządzenia '{name}'.") from exc
 
     def list_devices(self) -> list[HeatingDevice]:
-        return sorted(self.devices.values(), key=lambda device: device.name.lower())
+        return sorted(self.devices.values(), key=lambda device: device.name.casefold())
 
     @staticmethod
     def _validate_temperature(temperature: float) -> None:
